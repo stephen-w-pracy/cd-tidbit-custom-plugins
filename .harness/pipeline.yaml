@@ -86,19 +86,28 @@ pipeline:
                   spec:
                     skipDryRun: false
                     pruningEnabled: false
-              - step:
-                  type: Plugin
-                  name: Notify Kanboard
-                  identifier: Notify_Kanboard_Dev
-                  spec:
-                    connectorRef: ghcrconn
-                    image: <+pipeline.variables.plugin_image>
-                    settings:
-                      KANBOARD_URL: <+secrets.getValue("kanboard_url")>
-                      KANBOARD_API_TOKEN: <+secrets.getValue("kanboard_api_token")>
-                      KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
-                      KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
-                      KANBOARD_COL: <+env.variables.column_id>
+              - stepGroup:
+                  name: Kanboard Notification
+                  identifier: Kanboard_Notification_Dev
+                  steps:
+                    - step:
+                        type: Plugin
+                        name: Notify Kanboard
+                        identifier: Notify_Kanboard_Dev
+                        spec:
+                          connectorRef: ghcrconn
+                          image: <+pipeline.variables.plugin_image>
+                          settings:
+                            KANBOARD_URL: <+secrets.getValue("kanboard_url")>
+                            KANBOARD_API_TOKEN: <+secrets.getValue("kanboard_api_token")>
+                            KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
+                            KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
+                            KANBOARD_COL: <+env.variables.column_id>
+                  stepGroupInfra:
+                    type: KubernetesDirect
+                    spec:
+                      connectorRef: pipelinedemocluster
+                      namespace: <+infra.namespace>
             rollbackSteps:
               - step:
                   type: K8sRollingRollback
@@ -135,19 +144,28 @@ pipeline:
                   spec:
                     skipDryRun: false
                     pruningEnabled: false
-              - step:
-                  type: Plugin
-                  name: Notify Kanboard
-                  identifier: Notify_Kanboard_QA
-                  spec:
-                    connectorRef: ghcrconn
-                    image: <+pipeline.variables.plugin_image>
-                    settings:
-                      KANBOARD_URL: <+secrets.getValue("kanboard_url")>
-                      KANBOARD_API_TOKEN: <+secrets.getValue("kanboard_api_token")>
-                      KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
-                      KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
-                      KANBOARD_COL: <+env.variables.column_id>
+              - stepGroup:
+                  name: Kanboard Notification
+                  identifier: Kanboard_Notification_QA
+                  steps:
+                    - step:
+                        type: Plugin
+                        name: Notify Kanboard
+                        identifier: Notify_Kanboard_QA
+                        spec:
+                          connectorRef: ghcrconn
+                          image: <+pipeline.variables.plugin_image>
+                          settings:
+                            KANBOARD_URL: <+secrets.getValue("kanboard_url")>
+                            KANBOARD_API_TOKEN: <+secrets.getValue("kanboard_api_token")>
+                            KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
+                            KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
+                            KANBOARD_COL: <+env.variables.column_id>
+                  stepGroupInfra:
+                    type: KubernetesDirect
+                    spec:
+                      connectorRef: pipelinedemocluster
+                      namespace: <+infra.namespace>
             rollbackSteps:
               - step:
                   type: K8sRollingRollback
@@ -184,19 +202,28 @@ pipeline:
                   spec:
                     skipDryRun: false
                     pruningEnabled: false
-              - step:
-                  type: Plugin
-                  name: Notify Kanboard
-                  identifier: Notify_Kanboard_Prod
-                  spec:
-                    connectorRef: ghcrconn
-                    image: <+pipeline.variables.plugin_image>
-                    settings:
-                      KANBOARD_URL: <+secrets.getValue("kanboard_url")>
-                      KANBOARD_API_TOKEN: <+secrets.getValue("kanboard_api_token")>
-                      KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
-                      KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
-                      KANBOARD_COL: <+env.variables.column_id>
+              - stepGroup:
+                  name: Kanboard Notification
+                  identifier: Kanboard_Notification_Prod
+                  steps:
+                    - step:
+                        type: Plugin
+                        name: Notify Kanboard
+                        identifier: Notify_Kanboard_Prod
+                        spec:
+                          connectorRef: ghcrconn
+                          image: <+pipeline.variables.plugin_image>
+                          settings:
+                            KANBOARD_URL: <+secrets.getValue("kanboard_url")>
+                            KANBOARD_API_TOKEN: <+secrets.getValue("kanboard_api_token")>
+                            KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
+                            KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
+                            KANBOARD_COL: <+env.variables.column_id>
+                  stepGroupInfra:
+                    type: KubernetesDirect
+                    spec:
+                      connectorRef: pipelinedemocluster
+                      namespace: <+infra.namespace>
             rollbackSteps:
               - step:
                   type: K8sRollingRollback

@@ -10,11 +10,12 @@ This is the **exact mapping** of what tracks with what across the README, video 
 
 | Feature | Source of truth (`.harness/` or `plugin/`) | README | `video/script.md` act | `video/production-spec.md` act | `specs/build.md` |
 |---|---|---|---|---|---|
-| Plugin step (containerized) | `.harness/pipeline.yaml` (Plugin step inside each env stage) | "Run the Demo" steps 2–4 | Act 3 | Act 3 | §Controls row 1 |
-| Plugin image source | `plugin/Dockerfile` + `plugin/entrypoint.py` | "Setup" step 8 (build/push); "Run the Demo" step 1 (tour) | Act 2 | Act 2 | §Controls row 2 |
-| Harness secret reference in plugin env | `.harness/pipeline.yaml` — `settings:` (`<+secrets.getValue("kanboard_api_token")>`) | "Setup" step 7 (secret creation); "Run the Demo" step 1 | Act 2 | Act 2 | §Controls row 3 |
-| ITSM state change (Kanboard task move) | `plugin/entrypoint.py` → `kb.move_task_position(...)` | "Run the Demo" steps 2–4 | Acts 3, 4, 5 | Acts 3, 4, 5 | §Controls row 4 |
-| Per-environment plugin parameter | `.harness/pipeline.yaml` — `KANBOARD_COL: <+env.variables.column_id>` | "Run the Demo" step 1 (callout); steps 2–4 (effect) | Act 2 (callout); Act 4 (reinforcement) | Act 2 (callout); Act 4 (reinforcement) | §Controls row 5 |
+| Plugin step (containerized) | `.harness/pipeline.yaml` (Plugin step wrapped in a Container Step Group inside each env stage) | "Run the Demo" steps 2–4 | Act 3 | Act 3 | §Controls row 1 |
+| Container Step Group (`stepGroupInfra`) | `.harness/pipeline.yaml` (`stepGroup` wrapping each env stage's Plugin step) | "Run the Demo" step 1 (callout) | Act 2 (callout) | Act 2 (callout) | §Controls row 2 |
+| Plugin image source | `plugin/Dockerfile` + `plugin/entrypoint.py` | "Setup" step 8 (build/push); "Run the Demo" step 1 (tour) | Act 2 | Act 2 | §Controls row 3 |
+| Harness secret reference in plugin env | `.harness/pipeline.yaml` — `settings:` (`<+secrets.getValue("kanboard_api_token")>`) | "Setup" step 7 (secret creation); "Run the Demo" step 1 | Act 2 | Act 2 | §Controls row 4 |
+| ITSM state change (Kanboard task move) | `plugin/entrypoint.py` → `kb.move_task_position(...)` | "Run the Demo" steps 2–4 | Acts 3, 4, 5 | Acts 3, 4, 5 | §Controls row 5 |
+| Per-environment plugin parameter | `.harness/pipeline.yaml` — `KANBOARD_COL: <+env.variables.column_id>` | "Run the Demo" step 1 (callout); steps 2–4 (effect) | Act 2 (callout); Act 4 (reinforcement) | Act 2 (callout); Act 4 (reinforcement) | §Controls row 6 |
 
 ---
 
