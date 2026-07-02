@@ -15,7 +15,7 @@ pipeline:
     - stage:
         name: Build Plugin
         identifier: Build_Plugin
-        description: Builds and pushes ghcr.io/<github_user>/custom-plugins-kanboard:v1.
+        description: Builds and pushes ghcr.io/<github_user>/custom-plugins-kanboard, tagged v<sequenceId> and latest.
         type: CI
         spec:
           cloneCodebase: true

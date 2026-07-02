@@ -19,7 +19,8 @@ fail() { echo "  ✗ $1"; FAIL=$((FAIL+1)); }
 step() { echo; echo "=== $1 ==="; }
 
 step "Required tools"
-for tool in curl envsubst jq yq kubectl helm docker openssl; do
+# No local `docker` — image builds run on Harness Cloud.
+for tool in curl envsubst jq yq kubectl helm openssl; do
   if command -v "$tool" &>/dev/null; then
     ok "$tool"
   else
@@ -51,7 +52,7 @@ if [ -f "$REPO_ROOT/.env" ]; then
   # captured from Kanboard during setup.sh's bootstrap pass. Warn (don't fail)
   # if empty — they'll be populated on the next setup.sh run.
   for v in KANBOARD_API_TOKEN KANBOARD_PROJECT_ID KANBOARD_TASK_ID \
-           KANBOARD_COL_BACKLOG KANBOARD_COL_DEV KANBOARD_COL_QA KANBOARD_COL_PROD; do
+           KANBOARD_COL_DEV KANBOARD_COL_QA KANBOARD_COL_PROD; do
     if [ -n "${!v:-}" ]; then
       ok "$v set"
     else
@@ -72,8 +73,8 @@ if kubectl cluster-info &>/dev/null; then
       warn "namespace $ns missing — setup.sh will create it"
     fi
   done
-  if kubectl -n harness-delegate-ng get deployment 2>/dev/null | grep -q '.'; then
-    ok "delegate present in harness-delegate-ng"
+  if kubectl -n harness-delegate get deployment 2>/dev/null | grep -q '.'; then
+    ok "delegate present in harness-delegate"
   else
     warn "no delegate detected — setup.sh will install one"
   fi

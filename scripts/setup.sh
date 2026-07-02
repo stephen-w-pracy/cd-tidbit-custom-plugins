@@ -409,9 +409,10 @@ else
   fi
 
   # Step 4: write captured IDs back into .env (only blank keys are filled).
+  # Backlog column id is not persisted — the plugin only ever moves the task
+  # to Dev/QA/Prod, and "reset the demo" means dragging the card back manually.
   env_write KANBOARD_PROJECT_ID "$KB_PROJ_ID"
   env_write KANBOARD_TASK_ID    "$TASK_ID"
-  env_write KANBOARD_COL_BACKLOG "$COL_Backlog_ID"
   env_write KANBOARD_COL_DEV     "$COL_Dev_ID"
   env_write KANBOARD_COL_QA      "$COL_QA_ID"
   env_write KANBOARD_COL_PROD    "$COL_Prod_ID"

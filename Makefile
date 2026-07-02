@@ -1,4 +1,4 @@
-.PHONY: validate cleanup port-forward port-forward-dev port-forward-prod
+.PHONY: validate cleanup port-forward
 
 validate:
 	./scripts/validate-setup.sh
@@ -6,13 +6,7 @@ validate:
 cleanup:
 	./scripts/cleanup.sh
 
-# Foreground port-forward to both Dev (8080) and Prod (8081). Auto-reconnects
-# when pods rotate. Ctrl-C cleans both up.
+# Foreground port-forward to Dev (8080), QA (8081), Prod (8082), and Kanboard
+# (8090). Auto-reconnects when pods rotate. Ctrl-C cleans them all up.
 port-forward:
 	./scripts/port-forward.sh
-
-port-forward-dev:
-	kubectl port-forward svc/custom-plugins-demo 8080:80 -n web-dev
-
-port-forward-prod:
-	kubectl port-forward svc/custom-plugins-demo 8081:80 -n web-prod

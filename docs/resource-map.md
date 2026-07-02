@@ -12,6 +12,7 @@ Every Harness resource has a stable **identifier** (account-independent — thes
 
 | Resource | File | `identifier` | `name` |
 |---|---|---|---|
+| Project | created inline in `setup.sh` (via `.env`'s `HARNESS_PROJECT`) | `custom_plugins` | `custom_plugins` |
 | Pipeline | `.harness/pipeline.yaml` | `build_and_deploy_demo_app` | `Build and Deploy Demo App` |
 | Pipeline (CI) | `.harness/build-plugin-pipeline.yaml` | `build_kanboard_plugin` | `Build Kanboard Plugin` |
 | Service | `.harness/service.yaml` | `custom_plugins_demo` | `custom-plugins-demo` |
@@ -99,3 +100,8 @@ Three engines resolve tokens, in this order. They never overlap; knowing the own
 **"Which file feeds this `${VAR}`?"** — see [placeholders.md](placeholders.md).
 
 **"If I edit a demo step, what else changes?"** — see [parity-matrix.md](parity-matrix.md).
+
+**"Which secret does what?"**
+- `ghcr_token` — the GitHub PAT. `connector-github.yaml` uses it as `tokenRef` (and `apiAccess.tokenRef`) so Harness can fetch the pipeline codebase; `connector-ghcr.yaml` uses it as `passwordRef` so the CI stage can push the app image and the plugin container can be pulled at run time.
+- `kanboard_url` — the in-cluster JSON-RPC endpoint the plugin talks to. Injected into the Plugin step's `settings:` via `<+secrets.getValue("kanboard_url")>`.
+- `kanboard_api_token` — the API token the plugin authenticates with (as the reserved `jsonrpc` user). Same value is present in the Kanboard pod as `API_AUTHENTICATION_TOKEN`, injected by the Helm chart via `application.env[]`.
