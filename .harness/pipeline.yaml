@@ -106,7 +106,7 @@ pipeline:
                             APP_VERSION: <+artifact.tag>
                             ENV_NAME: <+env.name>
                             IMAGE: <+artifact.image>
-                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+pipeline.orgIdentifier>/projects/<+pipeline.projectIdentifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
+                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+org.identifier>/projects/<+project.identifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
                   stepGroupInfra:
                     type: KubernetesDirect
                     spec:
@@ -168,7 +168,7 @@ pipeline:
                             APP_VERSION: <+artifact.tag>
                             ENV_NAME: <+env.name>
                             IMAGE: <+artifact.image>
-                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+pipeline.orgIdentifier>/projects/<+pipeline.projectIdentifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
+                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+org.identifier>/projects/<+project.identifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
                   stepGroupInfra:
                     type: KubernetesDirect
                     spec:
@@ -230,7 +230,7 @@ pipeline:
                             APP_VERSION: <+artifact.tag>
                             ENV_NAME: <+env.name>
                             IMAGE: <+artifact.image>
-                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+pipeline.orgIdentifier>/projects/<+pipeline.projectIdentifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
+                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+org.identifier>/projects/<+project.identifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
                   stepGroupInfra:
                     type: KubernetesDirect
                     spec:
