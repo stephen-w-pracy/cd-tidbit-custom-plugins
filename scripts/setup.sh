@@ -402,7 +402,7 @@ else
   TASK_ID=$(jq -r --arg t "$KB_TASK_TITLE" 'first(.[] | select(.title==$t) | .id) // empty' <<<"$TASKS")
   if [ -z "$TASK_ID" ] || [ "$TASK_ID" = "null" ]; then
     TASK_ID=$(kb_rpc createTask \
-      "{\"project_id\":$KB_PROJ_ID,\"title\":\"$KB_TASK_TITLE\",\"column_id\":${COL_Backlog_ID}}")
+      "{\"project_id\":$KB_PROJ_ID,\"title\":\"$KB_TASK_TITLE\",\"column_id\":${COL_Backlog_ID},\"owner_id\":1,\"date_started\":$(date +%s)}")
     ok "task '$KB_TASK_TITLE' created (id=$TASK_ID)"
   else
     info "task '$KB_TASK_TITLE' exists (id=$TASK_ID)"

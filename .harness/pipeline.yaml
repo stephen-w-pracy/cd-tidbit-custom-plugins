@@ -46,7 +46,7 @@ pipeline:
                     connectorRef: ghcrconn
                     repo: ghcr.io/<+pipeline.variables.github_user>/custom-plugins-demo
                     tags:
-                      - <+pipeline.sequenceId>
+                      - v<+pipeline.sequenceId>
                     caching: true
                     dockerfile: app/Dockerfile
                     context: app
@@ -71,7 +71,7 @@ pipeline:
                         - identifier: custom_plugins_demo
                           type: DockerRegistry
                           spec:
-                            tag: <+pipeline.sequenceId>
+                            tag: v<+pipeline.sequenceId>
           environment:
             environmentRef: Dev
             deployToAll: false
@@ -103,6 +103,10 @@ pipeline:
                             KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
                             KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
                             KANBOARD_COL: <+env.variables.column_id>
+                            APP_VERSION: <+artifact.tag>
+                            ENV_NAME: <+env.name>
+                            IMAGE: <+artifact.image>
+                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+pipeline.orgIdentifier>/projects/<+pipeline.projectIdentifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
                   stepGroupInfra:
                     type: KubernetesDirect
                     spec:
@@ -161,6 +165,10 @@ pipeline:
                             KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
                             KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
                             KANBOARD_COL: <+env.variables.column_id>
+                            APP_VERSION: <+artifact.tag>
+                            ENV_NAME: <+env.name>
+                            IMAGE: <+artifact.image>
+                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+pipeline.orgIdentifier>/projects/<+pipeline.projectIdentifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
                   stepGroupInfra:
                     type: KubernetesDirect
                     spec:
@@ -219,6 +227,10 @@ pipeline:
                             KANBOARD_PROJECT_ID: <+pipeline.variables.kanboard_project_id>
                             KANBOARD_TASK_ID: <+pipeline.variables.kanboard_task_id>
                             KANBOARD_COL: <+env.variables.column_id>
+                            APP_VERSION: <+artifact.tag>
+                            ENV_NAME: <+env.name>
+                            IMAGE: <+artifact.image>
+                            EXECUTION_URL: https://app.harness.io/ng/account/<+account.identifier>/all/orgs/<+pipeline.orgIdentifier>/projects/<+pipeline.projectIdentifier>/pipelines/<+pipeline.identifier>/deployments/<+pipeline.executionId>/pipeline?storeType=INLINE
                   stepGroupInfra:
                     type: KubernetesDirect
                     spec:

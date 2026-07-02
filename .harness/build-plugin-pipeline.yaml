@@ -35,7 +35,7 @@ pipeline:
                     connectorRef: ghcrconn
                     repo: ghcr.io/<+pipeline.variables.github_user>/custom-plugins-kanboard
                     tags:
-                      - <+pipeline.sequenceId>
+                      - v<+pipeline.sequenceId>
                       - latest
                     caching: true
                     dockerfile: plugin/Dockerfile
