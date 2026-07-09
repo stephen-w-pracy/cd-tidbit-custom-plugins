@@ -130,6 +130,21 @@ For the overall demo design, learning objectives, and implementation details, se
 
 ---
 
+## Closing
+
+**Purpose:** One-sentence wrap-up and repo CTA.
+
+### Shots
+
+1. **README in editor or browser** — landing at the top of the page, repo URL visible in the browser bar.
+
+### Key Callouts
+
+- Repo URL for learners to clone: `github.com/<your-username>/cd-tidbit-custom-plugins`
+- Point viewers to the README "Future Enhancements" section for follow-on ideas.
+
+---
+
 ## Production Notes
 
 - **Wait for pods to roll** before cutting to the per-env browser tab refresh — pre-roll state on screen is confusing.

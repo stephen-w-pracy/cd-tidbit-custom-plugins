@@ -24,7 +24,8 @@ After completing this tidbit, a learner can:
 
 ## Documentation Resources
 
-- [Harness Plugin step](https://developer.harness.io/docs/continuous-integration/use-ci/use-drone-plugins/run-a-drone-plugin-in-ci/) — the Plugin step is a Drone-style plugin (image + settings → env vars)
+- [Harness Plugin step (CD)](https://developer.harness.io/docs/continuous-delivery/x-platform-cd-features/cd-steps/containerized-steps/plugin-step/) — the Plugin step in a CD Deployment stage (requires Container Step Group wrapping)
+- [Drone-style plugin contract](https://developer.harness.io/docs/continuous-integration/use-ci/use-drone-plugins/run-a-drone-plugin-in-ci/) — how image + settings → env vars works (CI-focused, but the contract is the same)
 - [Kanboard docs](https://docs.kanboard.org/)
 - [Kanboard Python client](https://github.com/kanboard/kanboard-api-python)
 - [Kanboard Helm chart (kube-the-home)](https://github.com/kube-the-home/kanboard-helm)
@@ -37,7 +38,7 @@ See the Repository Structure block in the README for the authoritative file tree
 - `plugin/` — the containerized Kanboard plugin (Dockerfile + entrypoint.py)
 - `k8s/` — Kubernetes manifests for the demo app (Go-templated)
 - `.harness/` — Harness resources (pipeline, service, environments, infras, connectors, secrets)
-- `scripts/` — `setup.sh`, `cleanup.sh`, `validate-setup.sh`, `port-forward.sh`
+- `scripts/` — `setup.sh`, `cleanup.sh`, `validate-setup.sh`, `port-forward.sh`; `.env.example` (copy to `.env` before running `setup.sh`); `Makefile` (convenience targets: `validate`, `cleanup`, `port-forward`)
 - `docs/` — resource map, placeholder table, parity matrix
 - `specs/` — this spec
 - `video/` — narrator script and production spec

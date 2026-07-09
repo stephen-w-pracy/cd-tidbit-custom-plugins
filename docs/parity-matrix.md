@@ -12,7 +12,7 @@ This is the **exact mapping** of what tracks with what across the README, video 
 |---|---|---|---|---|---|
 | Plugin step (containerized) | `.harness/pipeline.yaml` (Plugin step wrapped in a Container Step Group inside each env stage) | "Run the Demo" steps 2–4 | Act 3 | Act 3 | §Controls row 1 |
 | Container Step Group (`stepGroupInfra`) | `.harness/pipeline.yaml` (`stepGroup` wrapping each env stage's Plugin step) | "Run the Demo" step 1 (callout) | Act 2 (callout) | Act 2 (callout) | §Controls row 2 |
-| Plugin image source | `plugin/Dockerfile` + `plugin/entrypoint.py`; built by `.harness/build-plugin-pipeline.yaml` | "Setup" step 13 / Automated step 4 (build/push); "Run the Demo" step 1 (tour) | Act 2 | Act 2 | §Controls row 3 |
+| Plugin image source | `plugin/Dockerfile` + `plugin/entrypoint.py`; built by `.harness/build-plugin-pipeline.yaml` | "Build the Plugin Image" section; "Run the Demo" step 1 (tour) | Act 2 | Act 2 | §Controls row 3 |
 | Harness secret reference in plugin env | `.harness/pipeline.yaml` — `settings:` (`<+secrets.getValue("kanboard_api_token")>`) | "Setup" step 9 (secret creation); "Run the Demo" step 1 | Act 2 | Act 2 | §Controls row 4 |
 | ITSM state change (Kanboard task move + comment) | `plugin/entrypoint.py` → `kb.move_task_position(...)` **and** `kb.create_comment(...)` | "Run the Demo" steps 2–4 | Acts 3, 4, 5 | Acts 3, 4, 5 | §Controls row 5 |
 | Per-environment plugin parameter | `.harness/pipeline.yaml` — `KANBOARD_COL: <+env.variables.column_id>` (plus per-run `APP_VERSION`, `ENV_NAME`, `IMAGE`, `EXECUTION_URL` used in the comment) | "Run the Demo" step 1 (callout); steps 2–4 (effect) | Act 2 (callout); Act 4 (reinforcement) | Act 2 (callout); Act 4 (reinforcement) | §Controls row 6 |
@@ -63,3 +63,5 @@ A `${VAR}` placeholder (add/remove/rename) | `docs/placeholders.md`; `.env.examp
 A resource identifier (rename) | `docs/resource-map.md` §1–2; every cross-referencing `.harness/` file; `scripts/setup.sh` (endpoint IDs)
 Number of stages (e.g. drop QA, add Staging) | README "Run the Demo" step count; `video/script.md` act count; `video/production-spec.md` act table; parity §2 beat count; `.harness/environment-*.yaml`, `infra-*.yaml`, `k8s/*.yaml`
 The skill framing | `specs/build.md` "Skill Statement and Interpretation"; CLAUDE.md conventions; README "What You'll Learn"; §1 above
+README "Troubleshooting" section (connector name, namespace, or Helm release name changes) | README §Troubleshooting kubectl commands; README §Troubleshooting error text referencing `pipelinedemocluster`, `ghcrconn`, `ghcr_token`, `web-dev`/`web-qa`/`web-prod`
+README "Cleanup" section (Helm release names, namespace names, GHCR package names) | README §Cleanup manual steps; `scripts/cleanup.sh`; GHCR package names (`custom-plugins-demo`, `custom-plugins-kanboard`)

@@ -3,16 +3,14 @@
 This repository accompanies a Technical Tidbit video. It provides a
 reproducible demo you can run in your own Harness account and Kubernetes
 cluster to practice **Custom Plugins in a CD context** — a containerized
-plugin step that drives an external ITSM workflow (Kanboard) after each
-deploy, from Dev → QA → Prod.
+plugin step that drives an external ITSM workflow 
+([Kanboard](https://kanboard.org/)) after each deploy, from Dev → QA → Prod.
 
 ![Deploy pipeline execution showing the Kanboard notification step group in each environment](readme-assets/pipeline-hero.jpg)
 
 ![Kanboard board with the demo task moved to the Prod column and a deployment comment posted](readme-assets/kanboard-hero.jpg)
 
 ## What You Will Learn
-
-By the end, you will be able to use five things about the Plugin step:
 
 1. **The Plugin step itself** — reference a containerized image from a pipeline
    step (here: a small Python image that talks to Kanboard).
@@ -27,24 +25,22 @@ By the end, you will be able to use five things about the Plugin step:
 5. **Per-environment plugin parameters** — one image, three runs, three
    different target columns via `<+env.variables.column_id>`. The plugin
    also comments back to Kanboard with the app version, image, and a link to
-   the Harness execution — traceability with no extra step.
+   the Harness execution.
 
 ## Why This Matters for CD
 
-Harness's Plugin step docs live under Continuous Integration, and the step
-type is CI-native: it drops into a CI stage without ceremony. In a CD
-Deployment stage there is no built-in container runtime — a bare Plugin
-step won't start. The fix is small but not obvious: **wrap the Plugin step
-in a Container Step Group** with `stepGroupInfra: KubernetesDirect`, and
+Harness's Plugin step is CI-native: it drops into a CI stage without ceremony.
+In a CD Deployment stage there is no built-in container runtime, so a bare
+Plugin step won't start. The fix is small but not obvious: **wrap the Plugin
+step in a Container Step Group** with `stepGroupInfra: KubernetesDirect`, and
 point it at a Kubernetes connector and namespace. That block is what tells
 Harness where to spin up the plugin container.
 
-This tidbit surfaces that asymmetry as an explicit lesson rather than
-hiding it. Everything else — the image, the `settings:` map, the secret
-references, the per-env parameter — is identical to CI usage.
+Aside from that detail, the plugin step is identical in CI and CD.
 
 The plugin itself is small: 30 lines of Python in `plugin/entrypoint.py` and
-a 4-line Dockerfile. The interesting work is on the pipeline side, and
+a 4-line Dockerfile. It calls to the Kanboard service's API endpoint from
+within the cluster. The interesting work is on the pipeline side, and
 that's where the video and this README spend their time.
 
 ## Repository Structure
@@ -54,7 +50,7 @@ app/
   server.py                    # Python stdlib HTTP server (serves HTML from ConfigMap)
   Dockerfile                   # Container image for the demo app
 plugin/
-  entrypoint.py                # Kanboard plugin — moves the demo task, posts a comment
+  entrypoint.py                # Kanboard plugin. Moves the demo task, posts a comment
   Dockerfile                   # Container image for the plugin (python:3.12-alpine + kanboard)
 k8s/
   deployment.yaml              # Kubernetes Deployment (with imagePullSecrets)
@@ -84,12 +80,6 @@ scripts/
 docs/
   resource-map.md              # Identifier graph + templating-layer ownership
   placeholders.md              # ${VAR} → .env → consuming-files table
-  parity-matrix.md             # README ↔ scripts ↔ specs cross-reference
-specs/
-  build.md                     # Design spec (skill, objectives, decisions, tables)
-video/
-  script.md                    # Narrator script (5 acts)
-  production-spec.md           # Video production reference (shot lists, timings)
 ```
 
 ## Prerequisites
@@ -173,20 +163,13 @@ the demo project, columns, and task.
    duplicated. Set `CREATE_PROJECT=false` in `.env` to target an existing
    org/project instead of creating one.
 
-4. Build the plugin image in Harness. In the Harness UI, open the **Build
-   Kanboard Plugin** pipeline and click **Run**. The CI stage builds
-   `plugin/Dockerfile` on Harness Cloud and pushes
-   `ghcr.io/<your-username>/custom-plugins-kanboard:latest` (and a
-   sequence-numbered tag) to GHCR. You only need to do this once — or
-   again whenever `plugin/` changes.
-
-5. Run pre-flight checks:
+4. Run pre-flight checks:
 
    ```bash
    make validate
    ```
 
-6. Proceed to [How the Pipeline Works](#how-the-pipeline-works).
+5. Proceed to [Build the Plugin Image](#build-the-plugin-image)
 
 ### Manual Setup
 
@@ -207,9 +190,10 @@ helm install harness-delegate harness-delegate/harness-delegate-ng \
   --set tags=helm-delegate
 ```
 
-Find your Account ID and Delegate Token in **Project Settings → Delegates
-→ New Delegate**. The `tags=helm-delegate` value must match the
-`delegateSelectors:` list in `connector-k8s.yaml`.
+Find your Account ID in the account URL. Generate a Delegate Token at
+**Account Settings → Access Control → Delegates → Tokens → New Token**
+(separate from the delegate install wizard). The `tags=helm-delegate` value
+must match the `delegateSelectors:` list in `connector-k8s.yaml`.
 
 ### 2. Create a Kubernetes Connector
 
@@ -304,13 +288,13 @@ helm upgrade -i kanboard kanboard/kanboard \
 Kanboard needs a project, four columns (Backlog / Dev / QA / Prod), and a
 single demo task. `scripts/setup.sh` does this over a transient
 port-forward using `admin:admin`; if you're doing this manually, open the
-Kanboard UI (see [Verify Kanboard](#run-the-demo) below) and:
+Kanboard UI (see [Run the Demo](#run-the-demo) below) and:
 
 1. Sign in as `admin` / `admin`
 2. Create a project named **Deployments**
 3. Rename the four default columns to **Backlog**, **Dev**, **QA**, **Prod**
 4. Add a task titled **Deploy custom-plugins-demo** in the **Backlog** column
-5. Note the project id, task id, and column ids — you'll need them in the next step
+5. Note the project id, task id, and column ids — you'll need them in steps 11 and 12
 
 ### 9. Create Harness Secrets
 
@@ -372,15 +356,24 @@ For each Environment, create an Infrastructure Definition:
 > the automated setup script. If you paste these files manually, replace
 > each placeholder with your own value first. Harness expressions like
 > `<+env.name>` are **not** placeholders and should be left as-is. See
-> [docs/placeholders.md](docs/placeholders.md) for the full list.
+> [docs/placeholders.md](docs/placeholders.md) for the full list. Be sure to
+> also set the `kanboard_project_id` and `kanboard_task_id` pipeline variables
+> (under **Pipeline Variables**) to the project id and task id you noted in
+> step 8.
 
-### 13. Build the Plugin Image
+## Build the Plugin Image
 
-Run the **Build Kanboard Plugin** pipeline once to publish
-`ghcr.io/<your-username>/custom-plugins-kanboard:latest` to GHCR. This must
-succeed before you run the main pipeline.
+The plugin image could be built locally or live in any artifact registry. In
+this demo, you'll build it in Harness CI and push to GHCR so the CD pipeline
+can pull it.
 
-You're now ready to run the demo.
+1. In Harness, open the **Build Kanboard Plugin** pipeline and click **Run**.
+   The CI stage builds `plugin/Dockerfile` on Harness Cloud and pushes
+   `ghcr.io/<your-username>/custom-plugins-kanboard:latest` (and a
+   sequence-numbered tag) to GHCR. You only need to do this once — or
+   again whenever `plugin/` changes.
+
+The pipeline architecture is described in the next section.
 
 ## How the Pipeline Works
 
@@ -428,20 +421,20 @@ The **same plugin image** runs three times in one execution; only the
 
 **About the plugin image tag.** The main pipeline references the plugin as
 `ghcr.io/<user>/custom-plugins-kanboard:latest`. That's the pragmatic
-choice for a demo: the app pipeline cannot know the plugin pipeline's
-`sequenceId` at run time, so `:latest` avoids a manual coordination step
-every time the plugin changes. In production, you would tighten this up
+choice for a demo: the app pipeline cannot easily determine the plugin
+pipeline's `sequenceId` at run time, so `:latest` avoids a manual coordination
+step every time the plugin changes. In production, you would tighten this up
 one of three ways:
+
 - **Runtime input**: expose `plugin_image` as `<+input>` on the CD
   pipeline and pass the exact tag when triggering the run
+
 - **Digest pin**: reference the plugin by content-addressable digest
   (`@sha256:...`) so a re-published `:latest` cannot silently swap the
   image
+
 - **Trigger chaining**: have the plugin build pipeline update the CD
   pipeline's `plugin_image` variable via a webhook or trigger
-
-For the tidbit we keep `:latest` and are honest about the trade-off. See
-[specs/build.md](specs/build.md) for the full design rationale.
 
 **Version label.** The app version shown on the page and used as the
 image tag is `v<+pipeline.sequenceId>` — it increments by one on every run.
@@ -468,29 +461,37 @@ make port-forward
 # Ctrl-C stops all four.
 ```
 
+> [!NOTE]
+> Until you run the pipeline, you will see a stream of connection
+> errors about the dev, qa, and prod services not found. You can ignore these.
+
 Open the Kanboard UI at [http://localhost:8090](http://localhost:8090)
 (sign in as `admin` / `admin`) and confirm the **Deploy custom-plugins-demo**
 task is sitting in the **Backlog** column.
 
 ### Step 1 — Tour the plugin and the board
 
-Open three things side by side to set up what you're about to see:
+1. Open [entrypoint.py](./plugin/entrypoint.py). 
 
-1. `plugin/entrypoint.py` in your editor — point at the env-var reads (all
-   `PLUGIN_*` prefixed), the `kb.move_task_position(...)` call, and the
-   `kb.create_comment(...)` call.
-2. `.harness/pipeline.yaml` in your editor (or the YAML view in Harness)
-   scrolled to the Dev stage's `stepGroup` — point at
-   `stepGroupInfra: KubernetesDirect`, the Plugin step's `image:`, and the
-   `settings:` map (especially the `<+secrets.getValue(...)>` line and
-   `KANBOARD_COL: <+env.variables.column_id>`).
-3. The Kanboard tab — the demo task is in the **Backlog** column.
+2. Examine the `PLUGIN_*` prefixed environment variables the plugin expects.
+   Note `PLUGIN_ENV_NAME` in particular, as this value will be different for
+   each stage of the CD pipeline.
 
-**What to notice:**
-- The `settings:` keys become env vars with a `PLUGIN_` prefix inside the
-  container. That's a Drone plugin convention that Harness inherits.
-- The `stepGroup` wrapper is the CD-specific bit. In a CI stage you'd
-  drop the Plugin step in directly.
+3. Find the `kb.move_task_position(...)` call, and the `kb.create_comment(...)`
+   call. These are the two actions the plugin performs on Kanboard for each
+   deployment stage.
+
+4. In your Harness project, navigate to **Pipelines** and open the **Build and
+   Deploy Demo App** pipeline in visual mode. For each stage, open the
+   **Execution** tab to see the steps. Examine the **Kanboard Notification** step
+   group and plugin step configurations.
+
+5. Open the plugin step and examine **Settings**. Note the `settings:` map.
+   The `KANBOARD_COL` value is resolved from the environment variable you set
+   in the Harness Environment (`<+env.variables.column_id>`).
+
+   Other **Settings** keys become env vars with a `PLUGIN_` prefix inside the
+   container. 
 
 ### Step 2 — Trigger the pipeline; watch Build + Dev
 
@@ -501,10 +502,10 @@ Open three things side by side to set up what you're about to see:
 3. The **Deploy to Dev** stage runs its **Rolling Deploy** step, then the
    **Kanboard Notification** step group runs the plugin container.
 
-**What happens:**
-- Dev pods roll to the new tag.
-- The plugin container moves the demo card from **Backlog → Dev** and
-  posts a comment with the app version, image, and execution URL.
+   **What happens:**
+   - Dev pods roll to the new tag.
+   - The plugin container moves the demo card from **Backlog → Dev** and
+     posts a comment with the app version, image, and execution URL.
 
 Verify Dev is live:
 
@@ -589,7 +590,7 @@ you can use `scripts/cleanup.sh` to delete them all.
 2. Run the cleanup script:
 
    ```bash
-   ./scripts/cleanup.sh -y          # YOLO
+   ./scripts/cleanup.sh -y          # skips confirmation prompt
    ```
 
 ### Manual
@@ -712,8 +713,7 @@ kubectl port-forward svc/kanboard             8090:8080 -n kanboard
 
 ## Further Reading
 
-- [Harness Plugin step](https://developer.harness.io/docs/continuous-integration/use-ci/use-drone-plugins/run-a-drone-plugin-in-ci/)
-- [Container Step Groups](https://developer.harness.io/docs/continuous-delivery/x-platform-cd-features/executions/step-groups/)
-- [Kanboard documentation](https://docs.kanboard.org/)
-- [Kanboard Python client](https://github.com/kanboard/kanboard-api-python)
-- [Kanboard Helm chart](https://github.com/kube-the-home/kanboard-helm)
+- [Harness Plugin step](https://developer.harness.io/docs/continuous-delivery/x-platform-cd-features/cd-steps/containerized-steps/plugin-step/)
+- [Write custom plugins](https://developer.harness.io/docs/continuous-integration/use-ci/use-drone-plugins/custom_plugins/)
+- [Containerize Step Groups](https://developer.harness.io/docs/continuous-delivery/x-platform-cd-features/cd-steps/containerized-steps/containerized-step-groups/)
+
