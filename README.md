@@ -403,6 +403,9 @@ flowchart LR
 
     subgraph K8s["Kubernetes Cluster"]
         direction TB
+        subgraph nsdel["harness-delegate"]
+            Delegate["Delegate"]
+        end
         subgraph nsdev["web-dev"]
             PodDev["app pod"]
             CtrDev["plugin container"]
@@ -427,12 +430,16 @@ flowchart LR
     PluginImg -.->|pull| CtrQA
     PluginImg -.->|pull| CtrProd
 
-    DeployDev -->|rolling deploy| PodDev
-    DeployDev -->|"Container Step Group"| CtrDev
-    DeployQA -->|rolling deploy| PodQA
-    DeployQA -->|"Container Step Group"| CtrQA
-    DeployProd -->|rolling deploy| PodProd
-    DeployProd -->|"Container Step Group"| CtrProd
+    DeployDev -->|instruct| Delegate
+    DeployQA -->|instruct| Delegate
+    DeployProd -->|instruct| Delegate
+
+    Delegate -->|rolling deploy| PodDev
+    Delegate -->|rolling deploy| PodQA
+    Delegate -->|rolling deploy| PodProd
+    Delegate -->|"spin up"| CtrDev
+    Delegate -->|"spin up"| CtrQA
+    Delegate -->|"spin up"| CtrProd
 
     CtrDev -->|JSON-RPC API| KB
     CtrQA -->|JSON-RPC API| KB
@@ -442,6 +449,7 @@ flowchart LR
     style DeployDev fill:#0d6efd,stroke:#0a4fbf,color:#fff
     style DeployQA fill:#fd7e14,stroke:#a04600,color:#fff
     style DeployProd fill:#198754,stroke:#0f5132,color:#fff
+    style Delegate fill:#6b7280,stroke:#374151,color:#fff
 ```
 
 - **Build App Image (CI)**: Builds the demo app from `app/Dockerfile` on
