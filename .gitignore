@@ -21,3 +21,6 @@ venv/
 # Build artifacts
 *.tar.gz
 *.tgz
+
+# Logs (setup.sh transcript — no secrets, but never commit it)
+setup.log

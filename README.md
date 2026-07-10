@@ -6,7 +6,6 @@ cluster to practice **Custom Plugins in a CD context** — a containerized
 plugin step that drives an external ITSM workflow 
 ([Kanboard](https://kanboard.org/)) after each deploy, from Dev → QA → Prod.
 
-
 ![Deploy pipeline execution showing the Kanboard notification step group in Deploy to Dev stage](readme-assets/pipeline-hero.jpg)
 
 After each deployment stage, the plugin moves a Kanboard task to the next column and posts a comment with the app version, image, and a link back to the Harness execution.
@@ -84,6 +83,7 @@ scripts/
   cleanup.sh                   # Tears everything down
   port-forward.sh              # Foreground port-forward to Dev, QA, Prod, and Kanboard
   validate-setup.sh            # Pre-flight environment checks
+  verify-setup.sh              # Post-run check that every Harness resource was created
 docs/
   resource-map.md              # Identifier graph + templating-layer ownership
   placeholders.md              # ${VAR} → .env → consuming-files table
@@ -170,11 +170,20 @@ the demo project, columns, and task.
    duplicated. Set `CREATE_PROJECT=false` in `.env` to target an existing
    org/project instead of creating one.
 
-4. Run pre-flight checks:
+   The full transcript is written to `setup.log` (gitignored, no secrets). If a
+   step fails the script stops and prints a banner naming the step, command, and
+   exit code — check `setup.log` for details, fix the cause, and re-run.
+
+4. Confirm every Harness resource was created:
 
    ```bash
-   make validate
+   make verify
    ```
+
+   `make validate` runs *pre-flight* checks (tools, `.env`, cluster); `make
+   verify` runs *after* setup and GETs each Harness resource (project, secrets,
+   connectors, service, environments, infrastructures, pipelines), exiting
+   non-zero if any is missing.
 
 5. Proceed to [Build the Plugin Image](#build-the-plugin-image)
 

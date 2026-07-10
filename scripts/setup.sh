@@ -17,6 +17,12 @@
 # Re-runs are no-ops: the script reads .env, only writes back keys that are blank,
 # and skips Kanboard bootstrap when a "Deployments" project already exists.
 #
+# On failure the script stops immediately (set -e) and prints a loud banner
+# naming the step, command, and exit code that failed. A full transcript is
+# written to setup.log in the repo root (gitignored). Secret values are not
+# echoed to stdout/log; dry-run output is redacted. After a run, verify the
+# Harness resources with ./scripts/verify-setup.sh (or `make verify`).
+#
 # Profile: cd-k8s
 #
 set -euo pipefail
@@ -40,12 +46,39 @@ HARNESS_DIR="$REPO_ROOT/.harness"
 
 BASE_URL="${HARNESS_BASE_URL:-https://app.harness.io}"
 
+# --- Log file: tee everything to setup.log while still printing to console ---
+# Secret values are never echoed to stdout (real API bodies go out via
+# curl --data-binary; dry-run output is redacted), so the log is safe — but it
+# is gitignored as defense-in-depth.
+LOG_FILE="${SETUP_LOG:-$REPO_ROOT/setup.log}"
+exec > >(tee "$LOG_FILE") 2>&1
+
 # --- Output helpers ---
+CURRENT_STEP="startup"
 info()  { echo "  → $1"; }
 ok()    { echo "  ✓ $1"; }
 warn()  { echo "  ⚠ $1"; }
 die()   { echo "  ✗ $1" >&2; exit 1; }
-step()  { echo; echo "=== $1 ==="; }
+step()  { CURRENT_STEP="$1"; echo; echo "=== $1 ==="; }
+
+# --- Loud failure banner ---
+# set -e aborts on any unhandled non-zero command. Without this trap the exit
+# is silent (no per-resource "failed" line) — which is exactly how a first run
+# could stop after the delegate/Kanboard steps yet before the Harness REST
+# resources with no visible error. The ERR trap names the failing step,
+# command, and exit code, and points at the log. It is additive: the Kanboard
+# port-forward EXIT trap installed later still runs.
+on_err() {
+  local ec=$?
+  echo >&2
+  echo "  ✗ FAILED during step: ${CURRENT_STEP}" >&2
+  echo "    exit code : ${ec}" >&2
+  echo "    command   : ${BASH_COMMAND}" >&2
+  echo "    log       : ${LOG_FILE}" >&2
+  echo "    Resources created before this point remain (setup.sh is re-runnable)." >&2
+  echo "    Fix the cause and run ./scripts/setup.sh again, then ./scripts/verify-setup.sh." >&2
+}
+trap on_err ERR
 
 # --- Load .env ---
 [ -f "$REPO_ROOT/.env" ] || die ".env not found. Copy .env.example to .env and fill it in."
@@ -249,8 +282,15 @@ fi
 step "Delegate (Helm)"
 # A delegate must exist and be tagged $DELEGATE_SELECTOR before the K8s
 # connector can resolve. We fetch the project-scoped default delegate token
-# via API and run helm upgrade --install. Idempotent: if a delegate with our
-# name is already running, we skip.
+# via API and run helm upgrade --install into the fixed release name
+# `harness-delegate`. Because that release name is static, helm upgrades the
+# same release in place on a re-run — it never creates a second delegate.
+#
+# The previous guard short-circuited on a pod already in status.phase=Running.
+# That was fragile: on a first run the delegate has no time to reach Running
+# before the script moves on, so a re-run saw "not running", skipped nothing,
+# and rolled a *duplicate* delegate registration. We now let the idempotent
+# helm upgrade --install always run (in dry-run we just print what it would do).
 if [ "$DRY_RUN" = true ]; then
   info "GET $BASE_URL/ng/api/delegate-token-ng?$ACCT&$ORG&$PROJ&name=default_token"
   info "helm upgrade --install harness-delegate harness-delegate/harness-delegate-ng \\"
@@ -258,9 +298,10 @@ if [ "$DRY_RUN" = true ]; then
   info "    --set delegateName=$DELEGATE_NAME --set accountId=$HARNESS_ACCOUNT_ID \\"
   info "    --set delegateToken=<REDACTED> --set managerEndpoint=$BASE_URL \\"
   info "    --set tags=$DELEGATE_SELECTOR"
-elif kubectl get pods -A -l "harness.io/name=$DELEGATE_NAME" --field-selector=status.phase=Running 2>/dev/null | grep -q "$DELEGATE_NAME"; then
-  ok "delegate '$DELEGATE_NAME' is already running — skipping install"
 else
+  if helm status harness-delegate -n harness-delegate >/dev/null 2>&1; then
+    info "delegate helm release 'harness-delegate' present — upgrading in place (no duplicate)"
+  fi
   info "fetching default delegate token"
   # Race: Harness creates default_token asynchronously after the project is
   # provisioned. On a first run we may hit the endpoint before that side-effect
@@ -325,7 +366,14 @@ else
     --set-string "application.env[0].value=${KANBOARD_API_TOKEN}" >/dev/null
   ok "Kanboard chart applied in namespace 'kanboard'"
   info "Waiting for Kanboard rollout…"
-  kubectl -n kanboard rollout status deploy/kanboard --timeout=120s >/dev/null
+  # Drop the >/dev/null so pull/scheduling progress is visible in console + log.
+  # On a fresh cluster the image pull can be slow — allow 180s and, on timeout,
+  # dump pod state and fail loudly instead of letting set -e abort bare (which
+  # would silently skip every Harness REST resource that follows).
+  if ! kubectl -n kanboard rollout status deploy/kanboard --timeout=180s; then
+    kubectl -n kanboard get pods >&2 || true
+    die "Kanboard did not become ready in time. Check image pull / node capacity above, then re-run setup.sh."
+  fi
   ok "Kanboard pod ready"
 fi
 
@@ -351,7 +399,7 @@ else
   # bootstrap-only and torn down on exit.
   kubectl -n kanboard port-forward svc/kanboard 18090:8080 >/tmp/_kb_pf.log 2>&1 &
   KB_PF_PID=$!
-  trap 'kill ${KB_PF_PID} 2>/dev/null || true' EXIT
+  trap 'kill ${KB_PF_PID} 2>/dev/null; wait ${KB_PF_PID} 2>/dev/null; true' EXIT
   # Wait for the forward to accept connections.
   for _ in {1..20}; do
     curl -sS -o /dev/null -w '' http://127.0.0.1:18090/ 2>/dev/null && break
@@ -424,7 +472,7 @@ else
   fi
 
   # Tear down the bootstrap port-forward; the plugin step uses the in-cluster URL.
-  kill ${KB_PF_PID} 2>/dev/null || true
+  kill ${KB_PF_PID} 2>/dev/null; wait ${KB_PF_PID} 2>/dev/null; true
   trap - EXIT
 fi
 
