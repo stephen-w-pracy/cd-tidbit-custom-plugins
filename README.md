@@ -6,9 +6,16 @@ cluster to practice **Custom Plugins in a CD context** — a containerized
 plugin step that drives an external ITSM workflow 
 ([Kanboard](https://kanboard.org/)) after each deploy, from Dev → QA → Prod.
 
-![Deploy pipeline execution showing the Kanboard notification step group in each environment](readme-assets/pipeline-hero.jpg)
 
-![Kanboard board with the demo task moved to the Prod column and a deployment comment posted](readme-assets/kanboard-hero.jpg)
+![Deploy pipeline execution showing the Kanboard notification step group in Deploy to Dev stage](readme-assets/pipeline-hero.jpg)
+
+After each deployment stage, the plugin moves a Kanboard task to the next column and posts a comment with the app version, image, and a link back to the Harness execution.
+
+![Kanboard board with the demo task progressing from Backlog to Prod columns](readme-assets/kanboard-hero.jpg)
+
+When the task is deployed to Prod, the Kanboard task is in the Prod column with three comments, one from each stage.
+
+![Kanboard task in Prod with comment history expanded.](readme-assets/kanboard-comments.jpg)
 
 ## What You Will Learn
 
@@ -106,7 +113,7 @@ Whichever method you choose, follow these two steps first.
    | Harness Account ID           | In the account URL: <code>https:&#47;&#47;app.harness.io/ng/account/<strong style="color:orange">ACCOUNT_ID</strong>/...</code>   |
    | Harness Org                  | In the org URL: <code>https:&#47;&#47;app.harness.io/ng/ACCOUNT_ID/all/orgs/<strong style="color:orange">ORG_ID</strong>/...</code> |
    | Harness Project              | In the project URL: <code>.../ACCOUNT_ID/all/orgs/ORG_ID/projects/<strong style="color:orange">PROJECT_ID</strong>/...</code>[^1] |
-   | Harness API Key              | In **User profile** → **My API Keys** → **&lt;API_KEY&gt;** → **Tokens**[^2]                                                       |
+   | Harness PAT                  | In **User profile** → **My API Keys** → **&lt;API_KEY&gt;** → **Tokens**[^2]                                                       |
    | GitHub username              | For your fork and GHCR                                                                                                            |
    | GitHub Personal Access Token | Classic token with `repo`, `write:packages`, `read:packages` scopes                                                               |
 
@@ -379,16 +386,62 @@ The pipeline architecture is described in the next section.
 
 ```mermaid
 flowchart LR
-    A((build<br/>app)) --> B("deploy<br/>dev")
-    B --> C("deploy<br/>qa")
-    C --> D("deploy<br/>prod")
-    D --> E((("done")))
+    subgraph Harness["Harness Cloud"]
+        direction TB
+        Build["Build App Image"]
+        DeployDev["Deploy to Dev"]
+        DeployQA["Deploy to QA"]
+        DeployProd["Deploy to Prod"]
+        Build --> DeployDev --> DeployQA --> DeployProd
+    end
 
-    style A fill:#4f46e5,stroke:#312e81,color:#fff
-    style B fill:#0d6efd,stroke:#0a4fbf,color:#fff
-    style C fill:#fd7e14,stroke:#a04600,color:#fff
-    style D fill:#198754,stroke:#0f5132,color:#fff
-    style E fill:#e5e7eb,stroke:#6b7280,color:#111
+    subgraph GH["GitHub / GHCR"]
+        direction TB
+        AppImg[("custom-plugins-demo")]
+        PluginImg[("custom-plugins-kanboard")]
+    end
+
+    subgraph K8s["Kubernetes Cluster"]
+        direction TB
+        subgraph nsdev["web-dev"]
+            PodDev["app pod"]
+            CtrDev["plugin container"]
+        end
+        subgraph nsqa["web-qa"]
+            PodQA["app pod"]
+            CtrQA["plugin container"]
+        end
+        subgraph nsprod["web-prod"]
+            PodProd["app pod"]
+            CtrProd["plugin container"]
+        end
+        KB[("Kanboard")]
+    end
+
+    Build -->|push| AppImg
+
+    AppImg -.->|pull| PodDev
+    AppImg -.->|pull| PodQA
+    AppImg -.->|pull| PodProd
+    PluginImg -.->|pull| CtrDev
+    PluginImg -.->|pull| CtrQA
+    PluginImg -.->|pull| CtrProd
+
+    DeployDev -->|rolling deploy| PodDev
+    DeployDev -->|"Container Step Group"| CtrDev
+    DeployQA -->|rolling deploy| PodQA
+    DeployQA -->|"Container Step Group"| CtrQA
+    DeployProd -->|rolling deploy| PodProd
+    DeployProd -->|"Container Step Group"| CtrProd
+
+    CtrDev -->|JSON-RPC API| KB
+    CtrQA -->|JSON-RPC API| KB
+    CtrProd -->|JSON-RPC API| KB
+
+    style Build fill:#4f46e5,stroke:#312e81,color:#fff
+    style DeployDev fill:#0d6efd,stroke:#0a4fbf,color:#fff
+    style DeployQA fill:#fd7e14,stroke:#a04600,color:#fff
+    style DeployProd fill:#198754,stroke:#0f5132,color:#fff
 ```
 
 - **Build App Image (CI)**: Builds the demo app from `app/Dockerfile` on
