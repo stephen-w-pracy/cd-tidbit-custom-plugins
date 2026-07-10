@@ -393,73 +393,7 @@ The pipeline architecture is described in the next section.
 
 ## How the Pipeline Works
 
-```mermaid
-flowchart LR
-    subgraph Harness["Harness Cloud"]
-        direction TB
-        Build["Build App Image"]
-        DeployDev["Deploy to Dev"]
-        DeployQA["Deploy to QA"]
-        DeployProd["Deploy to Prod"]
-        Build --> DeployDev --> DeployQA --> DeployProd
-    end
-
-    subgraph GH["GitHub / GHCR"]
-        direction TB
-        AppImg[("custom-plugins-demo")]
-        PluginImg[("custom-plugins-kanboard")]
-    end
-
-    subgraph K8s["Kubernetes Cluster"]
-        direction TB
-        subgraph nsdel["harness-delegate"]
-            Delegate["Delegate"]
-        end
-        subgraph nsdev["web-dev"]
-            PodDev["app pod"]
-            CtrDev["plugin container"]
-        end
-        subgraph nsqa["web-qa"]
-            PodQA["app pod"]
-            CtrQA["plugin container"]
-        end
-        subgraph nsprod["web-prod"]
-            PodProd["app pod"]
-            CtrProd["plugin container"]
-        end
-        KB[("Kanboard")]
-    end
-
-    Build -->|push| AppImg
-
-    AppImg -.->|pull| PodDev
-    AppImg -.->|pull| PodQA
-    AppImg -.->|pull| PodProd
-    PluginImg -.->|pull| CtrDev
-    PluginImg -.->|pull| CtrQA
-    PluginImg -.->|pull| CtrProd
-
-    DeployDev -->|instruct| Delegate
-    DeployQA -->|instruct| Delegate
-    DeployProd -->|instruct| Delegate
-
-    Delegate -->|rolling deploy| PodDev
-    Delegate -->|rolling deploy| PodQA
-    Delegate -->|rolling deploy| PodProd
-    Delegate -->|"spin up"| CtrDev
-    Delegate -->|"spin up"| CtrQA
-    Delegate -->|"spin up"| CtrProd
-
-    CtrDev -->|JSON-RPC API| KB
-    CtrQA -->|JSON-RPC API| KB
-    CtrProd -->|JSON-RPC API| KB
-
-    style Build fill:#4f46e5,stroke:#312e81,color:#fff
-    style DeployDev fill:#0d6efd,stroke:#0a4fbf,color:#fff
-    style DeployQA fill:#fd7e14,stroke:#a04600,color:#fff
-    style DeployProd fill:#198754,stroke:#0f5132,color:#fff
-    style Delegate fill:#6b7280,stroke:#374151,color:#fff
-```
+![Flowchart from build to deploy to Kanboard](readme-assets/pipeline-diagram.png)
 
 - **Build App Image (CI)**: Builds the demo app from `app/Dockerfile` on
   Harness Cloud and pushes `ghcr.io/<user>/custom-plugins-demo:v<sequenceId>`
@@ -608,6 +542,8 @@ Verify at [http://localhost:8081](http://localhost:8081) — orange badge.
 
 ![QA app showing the same version with an orange badge](readme-assets/app-qa.jpg)
 
+![Kanboard board with the card moved into the QA column and the deployment comment expanded](readme-assets/kanboard-qa.jpg)
+
 ### Step 4 — Watch Prod
 
 The pipeline advances to **Deploy to Prod** and finishes green.
@@ -620,6 +556,8 @@ The pipeline advances to **Deploy to Prod** and finishes green.
 Verify at [http://localhost:8082](http://localhost:8082) — green badge.
 
 ![Prod app showing the same version with a green badge](readme-assets/app-prod.jpg)
+
+![Kanboard board with the card moved into the Prod column and the deployment comment expanded](readme-assets/kanboard-prod.jpg)
 
 To re-run the demo, drag the card back to **Backlog** in Kanboard and
 trigger the pipeline again.
@@ -637,12 +575,11 @@ Things the tidbit deliberately omits but a learner might layer in next:
 - **Plugin failure handling.** Make the plugin step a non-blocking
   notification (`failureStrategy: ignore`) so a Kanboard outage doesn't
   block deploys.
-- **One plugin, many ITSM targets.** Add a `TARGET=kanboard|jira|servicenow`
-  env var and switch on it in the entrypoint — same Plugin step shape for
-  all.
 - **Tighten the plugin tag.** Move `plugin_image` from `:latest` to
   `<+input>` (see [About the plugin image tag](#how-the-pipeline-works)),
   and have the CD pipeline require it as a runtime input.
+- **Create a version for talks to an enterprise ITSMs.** Write simple API calls
+  to Jira, ServiceNow, Freshservice, etc. 
 
 ## Cleanup
 
