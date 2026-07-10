@@ -1,4 +1,7 @@
-.PHONY: validate verify cleanup port-forward
+.PHONY: setup validate verify cleanup port-forward
+
+setup:
+	./scripts/setup.sh
 
 validate:
 	./scripts/validate-setup.sh
