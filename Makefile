@@ -1,7 +1,14 @@
-.PHONY: validate cleanup port-forward
+.PHONY: setup validate verify cleanup port-forward
+
+setup:
+	./scripts/setup.sh
 
 validate:
 	./scripts/validate-setup.sh
+
+# Post-run: confirm setup.sh actually created every Harness resource.
+verify:
+	./scripts/verify-setup.sh
 
 cleanup:
 	./scripts/cleanup.sh

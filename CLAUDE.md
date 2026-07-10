@@ -36,8 +36,9 @@ The tidbit demonstrates the feature in a single concrete workflow a learner can 
 - Secrets (created inline in `setup.sh`, not `.harness/` files): `ghcr_token` (GitHub PAT), `kanboard_url`, `kanboard_api_token`.
 
 ### Supporting Files
-- `scripts/setup.sh` — Automated provisioning: renders `.harness/` templates and creates every Harness resource via the NG REST API, plus cluster namespaces, the GHCR imagePullSecret, a Helm-installed delegate, and a Helm-installed Kanboard with a non-interactive JSON-RPC bootstrap that creates the project, columns, and demo task. Idempotent (POST → PUT on conflict). Honors `--dry-run`.
-- `scripts/validate-setup.sh` — Pre-flight checks (tools, `.env`, cluster reachability, namespaces, delegate).
+- `scripts/setup.sh` — Automated provisioning: renders `.harness/` templates and creates every Harness resource via the NG REST API, plus cluster namespaces, the GHCR imagePullSecret, a Helm-installed delegate, and a Helm-installed Kanboard with a non-interactive JSON-RPC bootstrap that creates the project, columns, and demo task. Idempotent (POST → PUT on conflict). Honors `--dry-run`. Runs under `set -euo pipefail` with an ERR trap that prints a loud failure banner (step, command, exit code) instead of exiting silently, and tees a full transcript to `setup.log` (gitignored, no secrets).
+- `scripts/validate-setup.sh` — Pre-flight checks (tools, `.env`, cluster reachability, namespaces, delegate). Makes no Harness API calls — it checks prerequisites, not created resources.
+- `scripts/verify-setup.sh` — Post-run verification: GETs each Harness resource `setup.sh` creates (project, secrets, connectors, service, environments, infrastructures, pipelines) via the NG API and exits non-zero if any is missing. Run after `setup.sh` to catch a partial run.
 - `scripts/cleanup.sh` — Tears down the full tutorial: Harness project (cascade-deletes children), Kanboard Helm release, `web-*` namespaces, delegate Helm release. Honors `--dry-run` and `-y`.
 - `scripts/port-forward.sh` — Foreground port-forward: Dev (8080), QA (8081), Prod (8082), Kanboard (8090). Auto-reconnects on pod rotation.
 - `specs/build.md` — Design spec: skill interpretation, learning objectives, decisions, controls/variables/resources tables.
@@ -52,7 +53,8 @@ The tidbit demonstrates the feature in a single concrete workflow a learner can 
 ## Common Commands
 
 ```bash
-make validate          # Pre-flight checks
+make validate          # Pre-flight checks (tools, .env, cluster) — before setup.sh
+make verify            # Post-run check that every Harness resource was created — after setup.sh
 make cleanup           # Tear down what setup.sh created
 make port-forward      # Foreground port-forward to Dev (8080), QA (8081), Prod (8082), and Kanboard (8090)
 ```
