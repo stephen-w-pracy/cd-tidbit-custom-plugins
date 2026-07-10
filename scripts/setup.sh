@@ -399,7 +399,11 @@ else
   # bootstrap-only and torn down on exit.
   kubectl -n kanboard port-forward svc/kanboard 18090:8080 >/tmp/_kb_pf.log 2>&1 &
   KB_PF_PID=$!
-  trap 'kill ${KB_PF_PID} 2>/dev/null; wait ${KB_PF_PID} 2>/dev/null; true' EXIT
+  # `wait` on a killed job returns its termination status (143 = SIGTERM), which
+  # under `set -e` would abort the script mid-cleanup and trip the ERR trap. Each
+  # cleanup command is individually guarded with `|| true` — a trailing `; true`
+  # does NOT protect the earlier commands in a `;`-list under `set -e`.
+  trap 'kill ${KB_PF_PID} 2>/dev/null || true; wait ${KB_PF_PID} 2>/dev/null || true' EXIT
   # Wait for the forward to accept connections.
   for _ in {1..20}; do
     curl -sS -o /dev/null -w '' http://127.0.0.1:18090/ 2>/dev/null && break
@@ -472,7 +476,10 @@ else
   fi
 
   # Tear down the bootstrap port-forward; the plugin step uses the in-cluster URL.
-  kill ${KB_PF_PID} 2>/dev/null; wait ${KB_PF_PID} 2>/dev/null; true
+  # `|| true` on each command: `wait` on the killed forward returns 143 (SIGTERM),
+  # which set -e would otherwise treat as a fatal error.
+  kill ${KB_PF_PID} 2>/dev/null || true
+  wait ${KB_PF_PID} 2>/dev/null || true
   trap - EXIT
 fi
 
