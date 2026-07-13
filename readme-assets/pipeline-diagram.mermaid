@@ -21,15 +21,15 @@ flowchart LR
         end
         subgraph nsdev["web-dev"]
             PodDev["app pod"]
-            CtrDev["plugin container"]
+            CtrDev["plugin pod"]
         end
         subgraph nsqa["web-qa"]
             PodQA["app pod"]
-            CtrQA["plugin container"]
+            CtrQA["plugin pod"]
         end
         subgraph nsprod["web-prod"]
             PodProd["app pod"]
-            CtrProd["plugin container"]
+            CtrProd["plugin pod"]
         end
         KB[("Kanboard")]
     end
@@ -61,6 +61,9 @@ flowchart LR
     style Build fill:#4f46e5,stroke:#312e81,color:#fff
     style AppImg fill:#4f46e5,stroke:#312e81,color:#fff
     style DeployDev fill:#0d6efd,stroke:#0a4fbf,color:#fff
+    style nsdev fill:#0d6efd,stroke:#0a4fbf,color:#fff
     style DeployQA fill:#fd7e14,stroke:#a04600,color:#fff
+    style nsqa fill:#fd7e14,stroke:#a04600,color:#fff
     style DeployProd fill:#198754,stroke:#0f5132,color:#fff
+    style nsprod fill:#198754,stroke:#0f5132,color:#fff
     style Delegate fill:#6b7280,stroke:#374151,color:#fff
