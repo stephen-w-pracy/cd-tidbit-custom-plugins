@@ -1,0 +1,80 @@
+---
+config:
+  layout: elk
+---
+flowchart LR
+ subgraph Harness["Harness Cloud"]
+    direction TB
+        Build["Build App Image"]
+        DeployDev["Deploy to Dev"]
+        DeployQA["Deploy to QA"]
+        DeployProd["Deploy to Prod"]
+  end
+ subgraph GH["GitHub / GHCR"]
+    direction TB
+        AppImg[("custom-plugins-demo")]
+        PluginImg[("custom-plugins-kanboard")]
+  end
+ subgraph nsdel["harness-delegate"]
+        Delegate["Delegate"]
+  end
+ subgraph nsdev["web-dev"]
+        PodDev["app pod"]
+        CtrDev["plugin pod"]
+  end
+ subgraph nsqa["web-qa"]
+        PodQA["app pod"]
+        CtrQA["plugin pod"]
+  end
+ subgraph nsprod["web-prod"]
+        PodProd["app pod"]
+        CtrProd["plugin pod"]
+  end
+ subgraph K8s["Kubernetes Cluster"]
+    direction TB
+        nsdel
+        nsdev
+        nsqa
+        nsprod
+        KB[("Kanboard")]
+  end
+    Build --> DeployDev
+    DeployDev --> DeployQA
+    DeployQA --> DeployProd
+    Build -- push --> AppImg
+    AppImg -. pull .-> PodDev & PodQA & PodProd
+    PluginImg -. pull .-> CtrDev & CtrQA & CtrProd
+    DeployDev -- instruct --> Delegate
+    DeployQA -- instruct --> Delegate
+    DeployProd -- instruct --> Delegate
+    Delegate -- rolling deploy --> PodDev & PodQA & PodProd
+    Delegate -- spin up --> CtrDev & CtrQA & CtrProd
+    CtrDev -- "JSON-RPC API" --> KB
+    CtrQA -- "JSON-RPC API" --> KB
+    CtrProd -- "JSON-RPC API" --> KB
+
+    style Build fill:#4f46e5,stroke:#312e81,color:#fff
+    style DeployDev fill:#0d6efd,stroke:#0a4fbf,color:#fff
+    style DeployQA fill:#fd7e14,stroke:#a04600,color:#fff
+    style DeployProd fill:#198754,stroke:#0f5132,color:#fff
+    style AppImg fill:#4f46e5,stroke:#312e81,color:#fff
+    style PluginImg fill:#AA00FF,color:#ffffff,stroke:#ffffff
+    style Delegate fill:#BBDEFB,stroke:#374151,color:#000000
+    style PodDev fill:#4f46e5,color:#ffffff
+    style CtrDev fill:#AA00FF,color:#ffffff,stroke:#ffffff
+    style PodQA fill:#4f46e5,color:#ffffff
+    style CtrQA fill:#AA00FF,color:#ffffff,stroke:#ffffff
+    style PodProd fill:#4f46e5,color:#ffffff
+    style CtrProd fill:#AA00FF,color:#ffffff,stroke:#ffffff
+    style nsdev fill:#0d6efd,stroke:#0a4fbf,color:#fff
+    style nsqa fill:#fd7e14,stroke:#a04600,color:#fff
+    style nsprod fill:#198754,stroke:#0f5132,color:#fff
+    style KB color:#ffffff,fill:#AA00FF
+    style GH fill:#e6e6e6
+    style Harness fill:#BBDEFB
+    linkStyle 7 stroke:#AA00FF,fill:none
+    linkStyle 8 stroke:#AA00FF,fill:none
+    linkStyle 9 stroke:#AA00FF,fill:none
+    linkStyle 19 stroke:#AA00FF,fill:none
+    linkStyle 20 stroke:#AA00FF,fill:none
+    linkStyle 21 stroke:#AA00FF
