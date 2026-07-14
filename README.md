@@ -578,8 +578,8 @@ Things the tidbit deliberately omits but a learner might layer in next:
 - **Tighten the plugin tag.** Move `plugin_image` from `:latest` to
   `<+input>` (see [About the plugin image tag](#how-the-pipeline-works)),
   and have the CD pipeline require it as a runtime input.
-- **Create a version for talks to an enterprise ITSMs.** Write simple API calls
-  to Jira, ServiceNow, Freshservice, etc. 
+- **Create a version that talks to an enterprise ITSMs.** Write simple API
+  calls to Jira, ServiceNow, Freshservice, PagerDuty, etc. 
 
 ## Cleanup
 
